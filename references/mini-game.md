@@ -51,18 +51,6 @@ Fix module resolution and load order before patching missing globals one by one.
 
 Generated launchers often contain virtual module registries. A string such as `__plugin__/appid/module.js` may identify a virtual module, while a physical directory named `__plugin__` can be rejected by preview upload. Preserve the virtual ID and move only the physical wrapper when necessary.
 
-## Game State
-
-Identify the real state boundary:
-
-- `wx` storage APIs
-- `cc.sys.localStorage`
-- engine save managers
-- serialized protobuf/JSON models
-- remote role/configuration responses
-
-Use real item IDs, character IDs, board schemas, and scene data. Patch reads and writes when persistent debug behavior is required. Avoid changing display labels while leaving authoritative state untouched.
-
 ## Interaction Validation
 
 Rendering is not enough. Exercise:
@@ -71,8 +59,5 @@ Rendering is not enough. Exercise:
 - movement or drag controls
 - one combat/action loop
 - one scene transition
-- one rewarded action
-- reload and resume
 
 An analytics or plugin exception inside a touch-begin handler can look like a movement bug. Follow the entire stack before modifying movement code.
-

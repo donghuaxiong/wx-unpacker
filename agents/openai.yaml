@@ -1,4 +1,4 @@
 interface:
   display_name: "微信小程序与小游戏逆向"
-  short_description: "微信包解密、解包、工程修复、本地替换与真机验证流程"
-  default_prompt: "Use $wx-unpacker-skill to unpack and reconstruct this authorized WeChat mini program or mini game as a runnable local project."
+  short_description: "微信包定位、解密、解包、分包重建与基础验证流程"
+  default_prompt: "Use $wx-unpacker-skill to locate, decrypt, unpack, and reconstruct this authorized WeChat mini program or mini game for WeChat DevTools import."
