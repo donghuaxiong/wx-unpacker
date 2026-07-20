@@ -6,7 +6,6 @@
 - Reconstruction order
 - Page and component recovery
 - Compiled frameworks
-- Platform services
 - Validation
 
 ## Recognition
@@ -64,28 +63,9 @@ An unpacked project is compiled output, not guaranteed source recovery:
 
 Aim first for a runnable WeChat project. Reconstructing the original framework project is a separate task and may be impossible without source maps.
 
-## Platform Services
-
-Trace these independently:
-
-- `wx.login`, session exchange, user profile
-- `wx.request`, `wx.uploadFile`, `wx.downloadFile`
-- `wx.cloud.*`
-- subscriptions and template messages
-- maps, location, Bluetooth, camera, NFC, filesystem
-- payment and authorization
-- ads and analytics
-
-For offline reconstruction, replace only the boundaries required by the requested flow. Do not fake permissions, payment success, or protected account access. Disable those flows with a clear local message.
-
-Cloud functions and backend databases are usually not recoverable from the client package. Recreate only the response contracts needed for authorized local testing.
-
 ## Validation
 
-- Open every requested page route.
-- Verify navigation, back behavior, tab bar state, and component rendering.
-- Trigger representative form/input actions.
-- Test local storage across reload.
-- Confirm network failures are expected or replaced; do not hide them.
-- Preview on a real device for APIs that differ from DevTools.
-
+- Import the directory that directly contains the reconstructed app entry.
+- Confirm the project compiles without fatal package, route, component, or module errors.
+- Confirm the initial page renders.
+- Generate a preview package when preview validation is in scope.

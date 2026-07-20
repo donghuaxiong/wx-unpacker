@@ -1,71 +1,179 @@
 # wx-unpacker-skill
 
-面向授权场景的微信小程序与微信小游戏逆向、工程重建和本地调试技能包。
+一个用于微信小程序和微信小游戏包处理的 Codex Skill。
 
-它解决的不是单纯“把 wxapkg 解压出来”，而是完整处理：
-
-```text
-定位缓存包
-→ 保留与校验原包
-→ V1MMWX 解密
-→ wxapkg 解包
-→ 主包/分包/插件重建
-→ 普通小程序或小游戏分类
-→ 启动链与模块路径修复
-→ 微信开发者工具运行验证
-→ 真机预览检查
-```
-
-## 使用边界
-
-仅用于你拥有或明确获准检查、修改的软件，例如：
-
-- 自有小程序/小游戏的源码丢失恢复
-- 获得客户授权的兼容性排查
-- 内部安全研究与离线调试
-- 已下线服务的本地演示恢复
-
-不要用于绕过支付、账号权限、访问控制、授权机制，或获取其他用户的凭证、存档和受保护数据。
-
-## 许可、使用限制与免责声明
-
-本项目采用 [MIT License](LICENSE) 发布。你可以在遵守 MIT License、适用法律、平台规则、目标软件许可协议及第三方权利的前提下使用、复制、修改、分发和商业使用本项目。使用者只能分析自己拥有的软件，或已经取得权利人明确授权的软件。
-
-严禁将本项目用于任何违反法律法规、平台规则、软件许可协议或第三方合法权益的活动，包括但不限于：
-
-- 未经授权获取、解包、修改、复制或传播他人的小程序、小游戏及其资源
-- 绕过支付、账号权限、访问控制、授权验证、反作弊或其他安全措施
-- 获取、篡改或传播他人的账号、凭证、个人信息、存档及受保护数据
-- 制作、运营、销售或传播侵权版本、破解版本、作弊工具或其他非法衍生物
-
-下载、安装、复制、修改、运行或传播本项目，即表示使用者已经理解并同意：
-
-1. 使用者应自行确认其行为已经获得充分授权，并自行承担因使用本项目产生的全部风险和责任。
-2. 因使用者违法、违规、侵权、违反平台规则或超出授权范围使用本项目而引起的投诉、封号、数据损失、设备损坏、经济损失、行政责任、民事责任或刑事责任，均由使用者自行承担。
-3. 作者及贡献者不参与、不鼓励也不支持任何未经授权或违法用途；对于使用者的具体使用方式及其直接或间接后果，作者及贡献者不承担责任，但适用法律另有强制性规定的除外。
-4. 本项目按“现状”提供，不对完整性、准确性、可用性、适销性、特定用途适用性、持续维护或不侵害第三方权利作出任何明示或默示保证。
-5. 本项目引用或调用的第三方工具、代码和资料仍分别受其原有许可证及使用条款约束；本免责声明不会替代或改变第三方许可证。
-
-如果你不能确认目标软件的权属、授权范围或当地法律是否允许相关行为，请不要使用本项目，并应先咨询具备资质的法律专业人士。
-
-MIT License 中的免责声明是本项目授权条款的一部分：本项目按“现状”提供，在适用法律允许的最大范围内，作者或版权持有人不对因本项目或其使用产生的索赔、损害或其他责任负责。README 中的中文说明用于帮助理解；如与 `LICENSE` 正文存在差异，以 `LICENSE` 为准。
-
-## 与 wxappUnpacker 的关系
-
-本 skill 不等于 wxappUnpacker，也不把 wxappUnpacker 源码打包进来。
-
-- `wxappUnpacker`：负责从明文 wxapkg 提取和尝试还原文件。
-- `decrypt_wxapkg.js`：负责本 skill 内的 `V1MMWX` 解密。
-- `wx-unpacker-skill`：负责选择工具、识别包结构、重建主包与分包、检查启动路径并完成基础验证。
-
-因此：
+它只负责一件事：根据目标 AppID 找到已获授权的 `wxapkg`，完成必要的解密、解包、主包/分包重建和入口修复，使结果能够导入微信开发者工具并启动。
 
 ```text
-wxappUnpacker = 解包工具
-wx-unpacker-skill = 完整逆向与恢复方法
+目标 AppID
+→ 定位并复制缓存包
+→ 校验原包
+→ 必要时解密 V1MMWX
+→ 解包主包和分包
+→ 重建目录与启动入口
+→ 导入微信开发者工具验证启动
 ```
 
-## 目录结构
+本 Skill 不负责解包后的业务功能修改。详细工作规范见 [SKILL.md](SKILL.md)。
+
+## 如何查看 AppID
+
+AppID 通常以 `wx` 开头。优先使用下面几种方式确认，不要只根据包目录名猜测。
+
+### 方法一：微信公众平台
+
+如果你是该小程序或小游戏的管理员，登录[微信公众平台](https://mp.weixin.qq.com/)，在开发设置或开发者 ID 页面查看 AppID。后台菜单名称可能随平台版本调整。
+
+### 方法二：已有开发者工具工程
+
+打开工程根目录的 `project.config.json`，查找：
+
+```json
+{
+  "appid": "wx1234567890abcdef"
+}
+```
+
+也可以在微信开发者工具的项目详情或基本信息中查看当前项目 AppID。
+
+### 方法三：微信客户端
+
+打开目标小程序或小游戏，点击右上角菜单，进入“关于”或“更多资料”页面。部分微信版本会显示或允许复制 AppID；如果没有显示，请使用公众平台或开发者工具确认。
+
+拿到 AppID 后，建议同时记录目标名称、类型以及你拥有的授权范围，避免处理错误的缓存包。
+
+## 一句话让 AI 解包
+
+安装本 Skill 后，把下面的 AppID 替换为目标值，直接对支持本地文件操作的 Codex 说：
+
+```text
+使用 $wx-unpacker-skill，根据 AppID wx1234567890abcdef 在这台电脑上定位我有权处理的微信小程序或小游戏缓存包；先复制原包并记录 SHA-256，不要修改微信缓存中的原文件；然后识别是否为 V1MMWX、完成解密，解出主包和所有相关分包，重建为可导入微信开发者工具并能启动的工程；最后告诉我原包、解包目录、工程目录和验证结果。
+```
+
+如果已经有 `.wxapkg` 文件，可以说：
+
+```text
+使用 $wx-unpacker-skill，解包这个我有权处理的 wxapkg；保留原文件，自动判断是否需要 V1MMWX 解密，重建主包和分包，并验证结果能否导入微信开发者工具启动。
+```
+
+## 一句话安装
+
+对支持 GitHub 和本地文件操作的 Codex 说：
+
+```text
+请从 https://github.com/donghuaxiong/wx-unpacker.git 安装 Codex Skill wx-unpacker-skill 到当前用户的默认 skills 目录；不要覆盖已有同名目录；安装后验证 SKILL.md、scripts 和 references 是否完整，并告诉我如何调用。
+```
+
+默认安装位置通常是：
+
+```text
+${CODEX_HOME}/skills/wx-unpacker-skill
+```
+
+未设置 `CODEX_HOME` 时通常为：
+
+```text
+~/.codex/skills/wx-unpacker-skill
+```
+
+## 手动安装
+
+直接克隆：
+
+```bash
+CODEX_SKILLS_DIR="${CODEX_HOME:-$HOME/.codex}/skills"
+mkdir -p "$CODEX_SKILLS_DIR"
+git clone https://github.com/donghuaxiong/wx-unpacker.git \
+  "$CODEX_SKILLS_DIR/wx-unpacker-skill"
+```
+
+如果你正在本地开发这个 Skill，可以使用软连接。把示例源路径替换为当前电脑的真实绝对路径：
+
+```bash
+SKILL_SOURCE="/absolute/path/to/wx-unpacker-skill"
+CODEX_SKILLS_DIR="${CODEX_HOME:-$HOME/.codex}/skills"
+
+mkdir -p "$CODEX_SKILLS_DIR"
+test -f "$SKILL_SOURCE/SKILL.md"
+test ! -e "$CODEX_SKILLS_DIR/wx-unpacker-skill"
+ln -s "$SKILL_SOURCE" "$CODEX_SKILLS_DIR/wx-unpacker-skill"
+```
+
+软连接只能指向当前电脑真实存在的路径，不能照搬其他人的 `/Users/用户名/...` 路径。
+
+安装或更新后，重新启动 Codex 或刷新 Skill 列表，然后使用：
+
+```text
+$wx-unpacker-skill
+```
+
+## 环境要求
+
+- Node.js
+- Python 3.9+
+- 微信开发者工具
+- 一个与目标包兼容的 wxapkg 解包器
+- `rg`，推荐但不是硬依赖
+
+本 Skill 可以调用外部 `qwerty472123/wxappUnpacker`，但不包含其源码。该外部工具使用 GPL-3.0-or-later，仍受其自身许可证约束。
+
+## 自带脚本
+
+```text
+scripts/decrypt_wxapkg.js   解密 V1MMWX 包
+scripts/inspect_project.py  识别包类型和工程结构
+scripts/validate_project.py 检查 JSON、JS、入口和预览目录
+```
+
+解密示例：
+
+```bash
+node scripts/decrypt_wxapkg.js \
+  --appid wx1234567890abcdef \
+  --input /path/to/input.wxapkg \
+  --output /path/to/output.wxapkg
+```
+
+检查重建工程：
+
+```bash
+python3 scripts/inspect_project.py /path/to/project --strict
+python3 scripts/validate_project.py /path/to/project
+```
+
+## 合格输出
+
+一次完整处理至少应给出：
+
+- 目标 AppID
+- 原包复制位置和 SHA-256
+- 是否进行了 V1MMWX 解密
+- 使用的解包器及版本
+- 主包和分包关系
+- 解包原始目录
+- 可导入微信开发者工具的工程目录
+- 是否通过静态检查和基础启动验证
+- 尚未解决的导入、模块或资源错误
+
+## 常见问题
+
+### AppID 错误或解密失败
+
+重新确认 AppID，不要用当前调试项目的 AppID 代替原包 AppID。确认文件完整，并检查它是否真的是 `V1MMWX` 包。
+
+### 分包提示需要主包目录
+
+先解主包，再把主包的原始解包目录作为上下文处理分包。不要把多个包按同名文件直接覆盖合并。
+
+### `module ... is not defined`
+
+从报错调用方计算模块 ID，检查物理文件和虚拟模块注册名。不要全局替换 `__plugin__` 字符串。
+
+### 真机预览提示非法目录
+
+检查是否存在以双下划线开头和结尾的实体目录。虚拟模块 ID 与实体目录不是同一概念。
+
+## 项目结构
 
 ```text
 wx-unpacker-skill/
@@ -73,526 +181,16 @@ wx-unpacker-skill/
 ├── README.md
 ├── LICENSE
 ├── agents/
-│   └── openai.yaml
-├── scripts/
-│   ├── decrypt_wxapkg.js
-│   ├── inspect_project.py
-│   └── validate_project.py
-└── references/
-    ├── unpacking.md
-    ├── mini-program.md
-    ├── mini-game.md
-    ├── cocos.md
-    ├── verification.md
-    └── troubleshooting.md
-```
-
-## 环境要求
-
-基础工具：
-
-- macOS、Linux 或 Windows
-- Node.js，建议保留一个与所选解包器兼容的版本
-- Python 3.9+
-- 微信开发者工具
-- `rg`（ripgrep），推荐但不是脚本硬依赖
-- 一个兼容目标包的 wxapkg 解包器
-
-当前已验证过的外部解包器类型：
-
-- `qwerty472123/wxappUnpacker`
-- 其 `package.json` 名称为 `wxapp-unpacker`
-- 许可证为 GPL-3.0-or-later，因此本 skill 不复制其源码
-
-老版本 wxappUnpacker 依赖较旧的 `vm2`、`cheerio` 等库。不要随意升级依赖后就认为输出仍等价，建议记录：
-
-- Git commit
-- `package-lock.json`
-- Node.js 版本
-- 实际执行命令
-
-## 安装为 Codex Skill
-
-### 安装前提
-
-Skill 目录必须完整包含：
-
-```text
-wx-unpacker-skill/
-├── SKILL.md
-├── agents/openai.yaml
 ├── scripts/
 └── references/
 ```
 
-Codex 默认从以下目录发现个人 skills：
+## 使用边界与免责声明
 
-```text
-${CODEX_HOME}/skills/
-```
+仅处理你拥有或已经得到明确授权的小程序、小游戏和软件包。不得使用本项目绕过支付、授权、账号权限、访问控制或其他安全措施，也不得获取、修改或传播他人的凭证、数据及受保护内容。
 
-如果没有设置 `CODEX_HOME`，通常使用：
+使用者应自行确认授权范围，并自行承担违法、违规、侵权或超出授权使用所造成的后果。本项目按“现状”提供；在适用法律允许的最大范围内，作者和版权持有人不对因本项目或其使用产生的索赔、损害或其他责任负责。
 
-```text
-~/.codex/skills/
-```
+## License
 
-安装完成后的目标结构必须是：
-
-```text
-<Codex skills 目录>/wx-unpacker-skill/SKILL.md
-```
-
-不能多嵌套一层，例如下面这种结构通常无法正确发现：
-
-```text
-<Codex skills 目录>/wx-unpacker-skill/wx-unpacker-skill/SKILL.md
-```
-
-### 用一句话让 AI 安装（推荐）
-
-要让其他电脑上的用户通过一句话安装，必须先把这个 skill 发布到用户或 AI 可以访问的位置，例如：
-
-- GitHub、GitLab、Gitee 等 Git 仓库
-- 用户可访问的私有仓库
-- 对话中上传的 ZIP 压缩包
-- 本机已经存在的完整 skill 目录
-
-当前电脑上的绝对路径不能被其他电脑直接访问。公开分发前，应把本目录作为仓库根目录发布，并取得真实仓库 URL。
-
-用户只需要把下面的 `<SKILL_REPOSITORY_URL>` 换成真实地址，然后对支持本地文件操作的 AI 说一句：
-
-```text
-请从 <SKILL_REPOSITORY_URL> 安装 Codex skill `wx-unpacker-skill` 到当前用户的默认 Codex skills 目录；安装前检查仓库根目录存在 SKILL.md，不要覆盖已有同名目录，安装后验证 YAML frontmatter、scripts 和 references 完整，并告诉我是否需要重启以及如何用 `$wx-unpacker-skill` 调用。
-```
-
-例如仓库发布后，可以写成：
-
-```text
-请从 https://github.com/example/wx-unpacker-skill 安装 Codex skill `wx-unpacker-skill`，验证成功后告诉我怎么调用。
-```
-
-如果用户直接上传了 ZIP，可以说：
-
-```text
-请把我上传的 wx-unpacker-skill 压缩包安全解压到当前用户的默认 Codex skills 目录，确保 SKILL.md 位于 wx-unpacker-skill 根目录，验证结构后告诉我如何调用；如果已经存在同名 skill，请先停止并询问我，不要覆盖。
-```
-
-如果仓库是私有的，AI 必须已经具备该仓库的合法访问权限。不要把访问令牌直接写进聊天、URL、README 或安装命令。
-
-### 从 Git 仓库手动安装
-
-以下示例假定 Git 仓库根目录就是本 skill 根目录。先设置实际仓库地址：
-
-```bash
-SKILL_REPOSITORY_URL="https://github.com/example/wx-unpacker-skill.git"
-CODEX_SKILLS_DIR="${CODEX_HOME:-$HOME/.codex}/skills"
-
-mkdir -p "$CODEX_SKILLS_DIR"
-git clone "$SKILL_REPOSITORY_URL" "$CODEX_SKILLS_DIR/wx-unpacker-skill"
-```
-
-如果目标目录已经存在，不要直接覆盖。先检查它是旧版本、软连接还是用户自己的修改。
-
-安装后验证：
-
-```bash
-test -f "$CODEX_SKILLS_DIR/wx-unpacker-skill/SKILL.md"
-test -d "$CODEX_SKILLS_DIR/wx-unpacker-skill/scripts"
-test -d "$CODEX_SKILLS_DIR/wx-unpacker-skill/references"
-```
-
-### 本地开发目录使用软连接
-
-如果 skill 已经存在于当前电脑的某个开发目录，推荐创建软连接。这样修改开发目录后，Codex 使用的也是最新内容。
-
-下面是通用示例；请把 `/absolute/path/to/wx-unpacker-skill` 替换为当前电脑上的真实绝对路径：
-
-```bash
-SKILL_SOURCE="/absolute/path/to/wx-unpacker-skill"
-CODEX_SKILLS_DIR="${CODEX_HOME:-$HOME/.codex}/skills"
-
-mkdir -p "$CODEX_SKILLS_DIR"
-ln -s "$SKILL_SOURCE" "$CODEX_SKILLS_DIR/wx-unpacker-skill"
-```
-
-创建前建议检查：
-
-```bash
-test -f "$SKILL_SOURCE/SKILL.md"
-test ! -e "$CODEX_SKILLS_DIR/wx-unpacker-skill"
-```
-
-检查软连接是否正确：
-
-```bash
-ls -ld "$CODEX_SKILLS_DIR/wx-unpacker-skill"
-test -f "$CODEX_SKILLS_DIR/wx-unpacker-skill/SKILL.md"
-```
-
-注意：软连接只能指向当前电脑真实存在的目录。把某台电脑的 `/Users/某个用户名/...` 路径复制给其他用户通常无效。
-
-### 复制安装
-
-如果不希望使用软连接，可以复制整个目录：
-
-```bash
-SKILL_SOURCE="/absolute/path/to/wx-unpacker-skill"
-CODEX_SKILLS_DIR="${CODEX_HOME:-$HOME/.codex}/skills"
-
-mkdir -p "$CODEX_SKILLS_DIR"
-cp -R "$SKILL_SOURCE" "$CODEX_SKILLS_DIR/wx-unpacker-skill"
-```
-
-复制安装不会自动同步后续更新。升级时应先比较本地修改，不要直接删除或覆盖未知内容。
-
-### Windows PowerShell 示例
-
-复制安装：
-
-```powershell
-$SkillSource = "C:\absolute\path\to\wx-unpacker-skill"
-$CodexRoot = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
-$SkillsDir = Join-Path $CodexRoot "skills"
-$Target = Join-Path $SkillsDir "wx-unpacker-skill"
-
-New-Item -ItemType Directory -Force -Path $SkillsDir | Out-Null
-Copy-Item -Recurse -Path $SkillSource -Destination $Target
-Test-Path (Join-Path $Target "SKILL.md")
-```
-
-Windows 创建符号链接可能需要开发者模式或管理员权限。如果不确定，优先使用复制安装。
-
-### 安装完成后的验证
-
-确认以下文件都能访问：
-
-```text
-wx-unpacker-skill/SKILL.md
-wx-unpacker-skill/agents/openai.yaml
-wx-unpacker-skill/scripts/decrypt_wxapkg.js
-wx-unpacker-skill/scripts/inspect_project.py
-wx-unpacker-skill/scripts/validate_project.py
-```
-
-如果当前 Codex 安装中带有 skill 校验器，可以运行：
-
-```bash
-python3 <skill-creator目录>/scripts/quick_validate.py \
-  "${CODEX_HOME:-$HOME/.codex}/skills/wx-unpacker-skill"
-```
-
-没有校验器时，至少确认：
-
-- `SKILL.md` 顶部 YAML 包含 `name` 和 `description`
-- `name` 为 `wx-unpacker-skill`
-- `agents/openai.yaml` 中的默认提示引用 `$wx-unpacker-skill`
-- 三个脚本通过 Python/Node 语法检查
-- `references/` 文件完整
-
-安装或更新 skill 后，重新启动 Codex 或刷新技能列表。然后可直接使用：
-
-```text
-$wx-unpacker-skill
-```
-
-如果 Codex 没有自动触发，可以在请求中明确写出 skill 名称。
-
-### 调用示例
-
-示例请求：
-
-```text
-使用 $wx-unpacker-skill，根据 AppID 定位我有权限调试的小程序包，解包并恢复成可导入微信开发者工具的工程。
-```
-
-```text
-使用 $wx-unpacker-skill，检查这个 Cocos 微信小游戏为什么导入后提示 module __plugin__ is not defined。
-```
-
-## 推荐案例目录
-
-每个目标建立独立案例目录：
-
-```text
-cases/<appid>/<timestamp>/
-├── original/
-├── decrypted/
-├── raw/
-├── project/
-├── hashes.sha256
-└── NOTES.md
-```
-
-含义：
-
-- `original/`：从微信缓存复制出的原始加密包，只读保存。
-- `decrypted/`：解密后的 wxapkg。
-- `raw/`：解包器的原始输出，不直接修改。
-- `project/`：导入微信开发者工具的工作工程。
-- `hashes.sha256`：源包 SHA-256。
-- `NOTES.md`：AppID、工具版本、主包/分包关系、修改和验证记录。
-
-## 快速开始
-
-以下命令使用 `SKILL_DIR` 表示本 skill 在当前电脑上的实际目录。先根据自己的安装位置设置：
-
-```bash
-SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/wx-unpacker-skill"
-test -f "$SKILL_DIR/SKILL.md"
-```
-
-如果使用的是尚未安装的本地开发副本，则把 `SKILL_DIR` 改成该副本的绝对路径。
-
-### 1. 保存原包并计算哈希
-
-```bash
-mkdir -p cases/wx123/2026-01-01/original
-cp /path/from/wechat/cache/*.wxapkg cases/wx123/2026-01-01/original/
-cd cases/wx123/2026-01-01
-shasum -a 256 original/*.wxapkg > hashes.sha256
-```
-
-不要直接对微信缓存文件进行修改。
-
-### 2. 检查包头
-
-```bash
-xxd -l 32 original/package.wxapkg
-```
-
-常见情况：
-
-- 开头为 `V1MMWX`：需要先解密。
-- 第 0 字节为 `BE`，第 13 字节为 `ED`：通常已经是明文 wxapkg。
-
-### 3. 解密 V1MMWX
-
-```bash
-node "$SKILL_DIR/scripts/decrypt_wxapkg.js" \
-  --appid wx1234567890abcdef \
-  --input original/package.wxapkg \
-  --output decrypted/package.wxapkg
-```
-
-脚本特性：
-
-- 要求明确提供 AppID、输入和输出路径
-- 禁止输入输出使用同一文件
-- 默认禁止覆盖已有输出
-- 解密后校验 wxapkg 魔数
-- AppID 错误时返回非零退出码
-
-如果明确需要替换输出：
-
-```bash
-node scripts/decrypt_wxapkg.js \
-  --appid wx1234567890abcdef \
-  --input original/package.wxapkg \
-  --output decrypted/package.wxapkg \
-  --force
-```
-
-### 4. 使用 wxappUnpacker 解包
-
-以下命令在外部 `wxappUnpacker` 目录中执行：
-
-```bash
-npm install
-node wuWxapkg.js -d /absolute/path/decrypted/main.wxapkg
-```
-
-如果自动转换失败，保留原始提取结果：
-
-```bash
-node wuWxapkg.js -o /absolute/path/decrypted/main.wxapkg
-```
-
-分包通常需要主包上下文：
-
-```bash
-node wuWxapkg.js \
-  -s=/absolute/path/raw/main \
-  /absolute/path/decrypted/subpackage.wxapkg
-```
-
-先解主包，再解分包。不要把多个包按同名文件直接覆盖合并。
-
-### 5. 检查重建工程
-
-```bash
-python3 "$SKILL_DIR/scripts/inspect_project.py" \
-  /absolute/path/project
-```
-
-JSON 输出：
-
-```bash
-python3 scripts/inspect_project.py /absolute/path/project --json
-```
-
-严格模式发现错误时返回非零：
-
-```bash
-python3 scripts/inspect_project.py /absolute/path/project --strict
-```
-
-检查内容包括：
-
-- 普通小程序/小游戏分类
-- AppID、入口和 manifest
-- 页面数、分包和插件声明
-- Cocos/Laya/Egret 特征
-- 缺失的分包根目录
-- 入口文件中缺失的相对 `require()`
-- 重复分包嵌套
-- 真机预览禁止的 `__...__` 实体目录
-
-### 6. 上传前静态验证
-
-```bash
-python3 "$SKILL_DIR/scripts/validate_project.py" \
-  /absolute/path/project
-```
-
-默认检查：
-
-- 所有 JSON 是否可解析
-- JavaScript 是否通过 `node --check`
-- 是否存在入口和 manifest
-- 是否存在微信预览保留目录
-- 是否缺少 `project.config.json`
-
-特别大的生成文件默认允许到 16 MB。可以调整：
-
-```bash
-python3 scripts/validate_project.py /path/project --max-js-mb 32
-```
-
-只检查 JSON、结构和目录：
-
-```bash
-python3 scripts/validate_project.py /path/project --skip-js
-```
-
-## 普通微信小程序流程
-
-普通小程序优先检查：
-
-```text
-app.json
-app.js
-app.wxss
-pages/
-components/
-workers/
-miniprogram_npm/
-```
-
-每个页面重点确认：
-
-```text
-页面路由
-页面 JS
-页面 JSON
-WXML
-WXSS
-usingComponents
-```
-
-如果原项目由 uni-app、Taro、WePY 等框架构建，解包结果通常是微信编译后的运行代码，不代表能恢复成原始 Vue、React 或 TypeScript 工程。优先目标应是恢复可运行的小程序工程。
-
-## 微信小游戏流程
-
-小游戏优先检查：
-
-```text
-game.js
-game.json
-主包与独立分包
-游戏引擎
-资源 Bundle
-插件缓存
-开放数据域
-```
-
-小游戏完成基础重建后，至少检查：
-
-- 点击和触摸
-- 人物移动或拖动
-- 场景切换
-- 一次战斗或核心操作
-
-## Cocos 小游戏注意事项
-
-Cocos 常见启动链：
-
-```text
-game.js
-→ adapter/bootstrap
-→ Cocos 引擎或插件 bundle
-→ ccRequire
-→ settings
-→ main
-→ window.boot()
-```
-
-最容易混淆的是两类 `__plugin__`：
-
-- JavaScript 里的 `__plugin__/appid/module.js` 可能是虚拟模块 ID，不能随意删除。
-- 文件系统中的 `__plugin__` 目录可能被真机预览判定为保留目录，必须迁移。
-
-迁移包装文件后，`require()` 的相对基准也会改变，必须重新计算最终模块 ID。
-
-## 微信开发者工具验证清单
-
-静态脚本通过后，在开发者工具中验证：
-
-1. 导入根目录正确。
-2. 调试 AppID 已记录。
-3. 编译无致命错误。
-4. 第一页面或第一场景显示。
-5. 所需分包与资源加载。
-6. 至少一次真实点击、输入、拖动或移动。
-7. 生成新的预览包。
-8. 真机执行基础启动流程。
-
-不要通过过滤控制台异常来制造“零错误”。已知无害警告应记录，不应隐藏。
-
-## 常见问题
-
-### `module __plugin__ is not defined`
-
-检查调用模块的 ID、相对解析基准和插件 bundle 的 `define()` 注册名。不要全局替换字符串。
-
-### `cc is not defined`
-
-先修 Cocos 引擎和适配器加载顺序，不要创建假的 `cc` 对象。
-
-### 首页能打开，但点击或移动失效
-
-检查触摸/点击事件中的第一个异常，确认是否仍有缺失模块或错误的加载路径。业务服务本身的改造不属于本 skill 的解包范围。
-
-### 开发者工具运行正常，真机预览提示非法目录
-
-运行 `validate_project.py`，重点检查以双下划线开头和结尾的实体目录。虚拟模块字符串不等于实体目录。
-
-### 手机仍运行旧代码
-
-清理适当的编译缓存，重新编译并生成新的二维码。不要继续扫描旧预览二维码。
-
-## 完成标准
-
-不能以“解包成功”作为完成标准。一个合格交付至少应说明：
-
-- 原包和 SHA-256 在哪里
-- 使用了哪个解包器及版本
-- 导入微信开发者工具的准确目录
-- 普通小程序还是小游戏
-- 引擎及版本
-- 主包、分包和插件关系
-- 修改过哪些文件
-- 完成了哪些导入、启动和路径验证
-- 是否完成真机预览验证
-
-详细的 Agent 工作规范位于 [SKILL.md](SKILL.md)，专项资料位于 [references/](references/)。
+[MIT License](LICENSE) © 2026 Jason。允许使用、复制、修改、分发和商业使用，但必须保留 MIT 许可证要求的版权及许可声明。第三方工具继续适用各自许可证。

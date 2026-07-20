@@ -3,10 +3,9 @@
 ## Contents
 
 - Runtime chain
-- Plugin localization
+- Plugin recovery
 - Module resolution
 - Bundles and scenes
-- Storage and data
 - Frequent failures
 
 ## Runtime Chain
@@ -26,7 +25,7 @@ Verify all of these where applicable:
 
 The exact working order depends on the generated version. Preserve the original ordering unless a stack trace proves it is broken.
 
-## Plugin Localization
+## Plugin Recovery
 
 When the original host references an unavailable Cocos game plugin:
 
@@ -34,7 +33,7 @@ When the original host references an unavailable Cocos game plugin:
 2. Preserve its module registry and engine payload.
 3. Load it from a normal physical directory such as `local-plugins/`.
 4. Keep virtual module IDs expected by the registry.
-5. Remove the online `gamePlugins` declaration only after every required plugin behavior has a local implementation.
+5. Adjust the online `gamePlugins` declaration only after the recovered engine payload loads from its reconstructed path.
 
 Example distinction:
 
@@ -65,27 +64,13 @@ Confirm:
 - bundle configuration matches extracted assets;
 - the initial `.fire` scene exists;
 - bundle loaders use local or expected remote URLs;
-- missing remote bundles are localized or explicitly disabled.
+- missing remote bundles are recovered from an authorized package source or reported as unavailable.
 
 When an item or prefab is missing, verify its UUID/config ID and bundle membership. Do not choose arbitrary existing assets just to silence an error.
-
-## Storage And Data
-
-Seed state only after `settings` and game configuration load. If a scene or board was cached before data injection:
-
-1. patch before preload;
-2. preload referenced prefabs;
-3. invalidate or refresh the runtime cache;
-4. bump the local snapshot version.
-
-For merge/board games, construct cells from real configuration relationships and clear stale locks, recovery state, orders, or backend-only fields deliberately.
 
 ## Frequent Failures
 
 - `cc is not defined`: engine/bootstrap order is wrong.
 - `module ... is not defined`: caller-relative module ID is wrong or bundle did not register it.
 - initial scene missing: settings or asset root is incomplete.
-- screen renders but touch fails: inspect exceptions in the same touch event before changing input code.
-- reload loses local changes: authoritative storage write path was not patched.
 - DevTools runs but preview rejects files: inspect reserved directories, package roots, size, and plugin declarations.
-

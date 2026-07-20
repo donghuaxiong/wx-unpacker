@@ -1,6 +1,6 @@
 ---
 name: wx-unpacker-skill
-description: Locate, decrypt, unpack, inspect, reconstruct, and validate authorized WeChat mini programs and WeChat mini games from wxapkg packages. Use when Codex must locate packages by AppID, decrypt V1MMWX containers, drive wxappUnpacker, reconstruct main and subpackage topology, distinguish normal mini programs from mini games, resolve launchers and Cocos/plugin paths, or prepare an unpacked project for basic import and preview checks in WeChat DevTools.
+description: Locate, decrypt, unpack, inspect, reconstruct, and validate authorized WeChat mini programs and WeChat mini games from wxapkg packages. Use when Codex must locate packages by AppID, decrypt V1MMWX containers, drive wxappUnpacker, reconstruct main and subpackage topology, distinguish normal mini programs from mini games, resolve launchers, engine adapters, modules, and plugin paths, or prepare an unpacked project for import and startup checks in WeChat DevTools.
 ---
 
 # WeChat Package Unpacking And Reconstruction
@@ -53,7 +53,7 @@ Work only on software the user owns or is authorized to inspect. Preserve every 
 - Repair engine, adapter, settings, bootstrap, and scene load order as one dependency chain.
 - Distinguish physical paths from virtual module IDs. Never globally replace `__plugin__/...` strings merely because physical `__plugin__` directories are forbidden during preview upload.
 - Import the exact reconstructed root into WeChat DevTools and capture the first fatal stack trace before further path repairs.
-- Stop at package reconstruction and basic startup verification. Do not modify business data, rewards, advertising behavior, login, backend services, or other post-unpack product behavior as part of this skill.
+- Stop at package reconstruction and basic startup verification. Do not alter application business behavior as part of this skill.
 
 ### 5. Validate In Layers
 

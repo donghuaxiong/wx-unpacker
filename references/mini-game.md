@@ -6,8 +6,6 @@
 - Engine detection
 - Package topology
 - Startup repair
-- Game state
-- Interaction validation
 
 ## Recognition
 
@@ -50,14 +48,3 @@ game.js
 Fix module resolution and load order before patching missing globals one by one. If `cc` or another engine global is undefined, identify where the engine should be initialized.
 
 Generated launchers often contain virtual module registries. A string such as `__plugin__/appid/module.js` may identify a virtual module, while a physical directory named `__plugin__` can be rejected by preview upload. Preserve the virtual ID and move only the physical wrapper when necessary.
-
-## Interaction Validation
-
-Rendering is not enough. Exercise:
-
-- first touch/click after entering a scene
-- movement or drag controls
-- one combat/action loop
-- one scene transition
-
-An analytics or plugin exception inside a touch-begin handler can look like a movement bug. Follow the entire stack before modifying movement code.

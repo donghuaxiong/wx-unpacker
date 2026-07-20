@@ -28,7 +28,6 @@ Verify each applicable row:
 | Compile | zero fatal build/runtime errors |
 | Bootstrap | first page or scene visible |
 | Packages | requested subpackages/bundles load |
-| Interaction | click, drag, movement, or form action works |
 | Preview | package generation has no forbidden paths |
 | Real device | requested flow works under the target base library |
 
@@ -46,8 +45,7 @@ After changing launchers, manifests, package roots, or plugin paths:
 - Never hide exceptions.
 - Separate fatal errors from known non-blocking warnings.
 - Capture the first stack for each distinct error.
-- After fixing one error, reproduce the original interaction that triggered it.
-- Watch for delayed callbacks and timer errors after the visible action completes.
+- After fixing one error, compile and repeat the same startup path.
 
 ## Handoff Record
 
